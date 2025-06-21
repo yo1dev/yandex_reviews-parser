@@ -6,11 +6,12 @@ from yandex_reviews_parser.parsers import Parser
 from yandex_reviews_parser.user_agents import user_agents
 
 class YandexParser:
-    def __init__(self, max_pages_per_session=8):
+    def __init__(self, max_pages_per_session: int = 8, driver_executable_path: str = None):
         self.driver = None
         self.session_use_count = 0
         self.max_pages_per_session = max_pages_per_session
         self.user_agents = user_agents
+        self.driver_executable_path = driver_executable_path
 
     def create_driver(self):
         """Create a new driver instance with randomized fingerprint"""
@@ -27,7 +28,8 @@ class YandexParser:
         opts.add_argument(f'--window-size={width},{height}')
 
         return uc.Chrome(
-            options=opts
+            options = opts,
+            driver_executable_path = self.driver_executable_path
         )
 
     def rotate_session(self):
