@@ -1,3 +1,5 @@
+import os
+import tempfile
 import random
 import time
 import undetected_chromedriver as uc
@@ -6,12 +8,11 @@ from yandex_reviews_parser.parsers import Parser
 from yandex_reviews_parser.user_agents import user_agents
 
 class YandexParser:
-    def __init__(self, max_pages_per_session: int = 8, driver_executable_path: str = None):
+    def __init__(self, max_pages_per_session: int = 8):
         self.driver = None
         self.session_use_count = 0
         self.max_pages_per_session = max_pages_per_session
         self.user_agents = user_agents
-        self.driver_executable_path = driver_executable_path
 
     def create_driver(self):
         """Create a new driver instance with randomized fingerprint"""
@@ -22,23 +23,22 @@ class YandexParser:
         opts.add_argument('--disable-gpu')
         opts.add_argument(f'--user-agent={random.choice(self.user_agents)}')
 
+        self.user_data_dir = tempfile.mkdtemp()
+        options.add_argument(f"--user-data-dir={self.user_data_dir}")
+        options.add_argument("--profile-directory=Default") 
+
         # Randomize viewport size
         width = random.randint(1200, 1920)
         height = random.randint(800, 1080)
         opts.add_argument(f'--window-size={width},{height}')
 
         return uc.Chrome(
-            options = opts,
-            driver_executable_path = self.driver_executable_path
+            options = opts
         )
 
     def rotate_session(self):
         """Rotate to a new browser session"""
-        try:
-            if self.driver:
-                self.driver.quit()
-        except Exception:
-            pass
+        self.close()
 
         self.driver = self.create_driver()
         self.session_use_count = 0
@@ -107,3 +107,5 @@ class YandexParser:
                 self.driver.quit()
         except Exception:
             pass
+
+        os.rmdir(self.user_data_dir)
