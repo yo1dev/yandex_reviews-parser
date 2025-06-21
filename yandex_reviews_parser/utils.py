@@ -110,4 +110,11 @@ class YandexParser:
             pass
 
         if self.user_data_dir:
-            shutil.rmtree(self.user_data_dir)
+            # Retry removal with increasing delays
+            for _ in range(5):  # Try up to 5 times
+                try:
+                    shutil.rmtree(self.user_data_dir)
+                    break  # Exit loop if successful
+                except OSError:
+                    time.sleep(0.5)  # Wait before retrying
+            self.user_data_dir = None  # Reset regardless of success
