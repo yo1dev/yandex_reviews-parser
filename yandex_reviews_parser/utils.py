@@ -25,8 +25,8 @@ class YandexParser:
         opts.add_argument(f'--user-agent={random.choice(self.user_agents)}')
 
         self.user_data_dir = tempfile.mkdtemp()
-        options.add_argument(f"--user-data-dir={self.user_data_dir}")
-        options.add_argument("--profile-directory=Default") 
+        opts.add_argument(f"--user-data-dir={self.user_data_dir}")
+        opts.add_argument("--profile-directory=Default") 
 
         # Randomize viewport size
         width = random.randint(1200, 1920)
