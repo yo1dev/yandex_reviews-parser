@@ -13,6 +13,7 @@ class YandexParser:
         self.session_use_count = 0
         self.max_pages_per_session = max_pages_per_session
         self.user_agents = user_agents
+        self.user_data_dir = None
 
     def create_driver(self):
         """Create a new driver instance with randomized fingerprint"""
@@ -108,4 +109,5 @@ class YandexParser:
         except Exception:
             pass
 
-        os.rmdir(self.user_data_dir)
+        if self.user_data_dir:
+            os.rmdir(self.user_data_dir)
