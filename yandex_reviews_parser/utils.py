@@ -1,4 +1,4 @@
-import os
+import shutil
 import tempfile
 import random
 import time
@@ -110,4 +110,4 @@ class YandexParser:
             pass
 
         if self.user_data_dir:
-            os.rmdir(self.user_data_dir)
+            shutil.rmtree(self.user_data_dir)
