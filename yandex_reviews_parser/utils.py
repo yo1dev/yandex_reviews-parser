@@ -99,6 +99,7 @@ class YandexParser:
             return {'error': f'Unexpected error: {str(e)}'}
 
     def close(self):
+        """Clean up resources"""
         try:
             if self.driver:
                 self.driver.quit()
