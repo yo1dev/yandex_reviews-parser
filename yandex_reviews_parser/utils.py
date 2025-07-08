@@ -5,7 +5,6 @@ import time
 import undetected_chromedriver as uc
 from selenium.common.exceptions import WebDriverException
 from yandex_reviews_parser.parsers import Parser
-from yandex_reviews_parser.user_agents import user_agents
 
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
