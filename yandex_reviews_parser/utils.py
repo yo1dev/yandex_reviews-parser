@@ -16,7 +16,6 @@ class YandexParser:
         self.driver = None
         self.session_use_count = 0
         self.max_pages_per_session = max_pages_per_session
-        self.user_agents = user_agents
         self.user_data_dir = None
 
     def create_driver(self):
