@@ -7,6 +7,11 @@ from selenium.common.exceptions import WebDriverException
 from yandex_reviews_parser.parsers import Parser
 from yandex_reviews_parser.user_agents import user_agents
 
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+
+
 class YandexParser:
     def __init__(self, max_pages_per_session: int = 8):
         self.driver = None
@@ -20,20 +25,21 @@ class YandexParser:
         opts = uc.ChromeOptions()
         opts.add_argument('--no-sandbox')
         opts.add_argument('--disable-dev-shm-usage')
-        opts.add_argument('headless')
         opts.add_argument('--disable-gpu')
-        opts.add_argument(f'--user-agent={random.choice(self.user_agents)}')
+        opts.add_argument('--window-size=1200,800')
+
+        opts.add_argument('--disable-blink-features=AutomationControlled')
+
+        opts.add_argument("--disable-web-security")
+        opts.add_argument("--disable-site-isolation-trials")
+        opts.add_argument("--disable-features=SitePerProcess")
 
         self.user_data_dir = tempfile.mkdtemp()
         opts.add_argument(f"--user-data-dir={self.user_data_dir}")
         opts.add_argument("--profile-directory=Default") 
 
-        # Randomize viewport size
-        width = random.randint(1200, 1920)
-        height = random.randint(800, 1080)
-        opts.add_argument(f'--window-size={width},{height}')
-
         return uc.Chrome(
+            headless=True,
             options = opts
         )
 
@@ -59,11 +65,10 @@ class YandexParser:
             url = f'https://yandex.ru/maps/org/{id_yandex}/reviews/'
             self.driver.get(url)
 
-            # Random scroll to simulate reading
-            if random.random() > 0.4:  # 60% chance
-                scroll_pixels = random.randint(200, 800)
-                self.driver.execute_script(f"window.scrollBy(0, {scroll_pixels})")
-                time.sleep(random.uniform(0.3, 0.8))
+            # Wait for critical element instead of fixed sleep
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "orgpage-header-view__header"))
+            )
 
             # Initialize the original Parser class
             parser = Parser(self.driver)
@@ -74,6 +79,7 @@ class YandexParser:
 
             # Check for potential block
             if not company_info.get('name'):
+                time.sleep(random.uniform(5, 15))
                 # Rotate and retry once
                 self.rotate_session()
                 self.driver.get(url)
