@@ -61,6 +61,21 @@ class Parser:
         except NoSuchElementException:
             date = None
 
+        # Try to expand review text if "Ещё" button exists
+        try:
+            # Find the expand button within this review element
+            expand_button = elem.find_element(
+                By.CSS_SELECTOR,
+                ".business-review-view__expand"
+            )
+            # Click using JavaScript to avoid interaction issues
+            self.driver.execute_script("arguments[0].click()", expand_button)
+            # Wait briefly for content to expand
+            time.sleep(0.1)
+        except NoSuchElementException:
+            # No expand button found - text is already fully visible
+            pass
+
         try:
             text = elem.find_element(By.CSS_SELECTOR, "span.spoiler-view__text-container").text
         except NoSuchElementException:
