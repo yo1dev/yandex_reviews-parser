@@ -2,10 +2,13 @@ import time
 from dataclasses import asdict
 
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 from yandex_reviews_parser.helpers import ParserHelper
 from yandex_reviews_parser.storage import Review, Info
+
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 class Parser:
