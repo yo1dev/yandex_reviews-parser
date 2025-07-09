@@ -62,7 +62,7 @@ class Parser:
             date = None
 
         try:
-            text = elem.find_element(By.XPATH, ".//span[@class='spoiler-view__text-container']").text
+            text = elem.find_element(By.CSS_SELECTOR, "span.spoiler-view__text-container").text
         except NoSuchElementException:
             text = None
         try:
