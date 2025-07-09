@@ -61,21 +61,6 @@ class Parser:
         except NoSuchElementException:
             date = None
 
-        # Try to expand review text if "Ещё" button exists
-        try:
-            # Find the expand button within this review element
-            expand_button = elem.find_element(
-                By.CSS_SELECTOR,
-                ".business-review-view__expand"
-            )
-            # Click using JavaScript to avoid interaction issues
-            self.driver.execute_script("arguments[0].click()", expand_button)
-            # Wait briefly for content to expand
-            time.sleep(0.1)
-        except NoSuchElementException:
-            # No expand button found - text is already fully visible
-            pass
-
         try:
             text = elem.find_element(By.CSS_SELECTOR, "span.spoiler-view__text-container").text
         except NoSuchElementException:
@@ -93,7 +78,7 @@ class Parser:
                 # Click using JavaScript to avoid direct interaction
                 self.driver.execute_script("arguments[0].click()", expand_button)
                 # Wait briefly for DOM update
-                time.sleep(0.3)
+                time.sleep(0.1)
                 # Refind the answer bubble with stale-safe approach
                 try:
                     answer = WebDriverWait(self.driver, 2).until(
@@ -158,14 +143,72 @@ class Parser:
         )
         return asdict(item)
 
+    def __ensure_all_reviews_expanded(self):
+        """Ensure all reviews are expanded, handling those not in viewport"""
+        # Get all review elements
+        reviews = self.driver.find_elements(
+            By.CSS_SELECTOR,
+            ".business-reviews-card-view__review"
+        )
+
+        # Get viewport dimensions
+        viewport_height = self.driver.execute_script("return window.innerHeight;")
+
+        for i, review in enumerate(reviews):
+            try:
+                # Check if review needs expansion
+                try:
+                    expand_btn = review.find_element(
+                        By.CSS_SELECTOR,
+                        ".business-review-view__expand"
+                    )
+                except NoSuchElementException:
+                    # Already expanded or no expand button
+                    continue
+
+                # Scroll review into view if needed
+                review_y = review.location['y']
+                current_scroll = self.driver.execute_script("return window.pageYOffset;")
+
+                if not (current_scroll <= review_y < current_scroll + viewport_height):
+                    # Scroll to review with human-like behavior
+                    scroll_target = max(0, review_y - viewport_height//3)
+                    self.driver.execute_script(
+                        f"window.scrollTo({{top: {scroll_target}, behavior: 'smooth'}});"
+                    )
+                    time.sleep(random.uniform(0.1, 0.3))
+
+                # Expand the review
+                self.driver.execute_script("arguments[0].click()", expand_btn)
+
+                # Random delay between actions
+                time.sleep(random.uniform(0.1, 0.2))
+
+                # Occasionally scroll randomly to mimic human
+                if random.random() > 0.8:  # 20% chance
+                    random_scroll = random.randint(-100, 100)
+                    self.driver.execute_script(
+                        f"window.scrollBy(0, {random_scroll});"
+                    )
+                    time.sleep(random.uniform(0.1, 0.3))
+
+            except Exception as e:
+                continue
+
     def __get_data_reviews(self) -> list:
-        reviews = []
+        # Scroll to load all reviews
         elements = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")
         if len(elements) > 1:
             self.__scroll_to_bottom(elements[-1])
             elements = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")
-            for elem in elements:
-                reviews.append(self.__get_data_item(elem))
+
+        # Ensure ALL reviews are expanded
+        self.__ensure_all_reviews_expanded()
+
+        # Now parse all reviews
+        reviews = []
+        for elem in elements:
+            reviews.append(self.__get_data_item(elem))
         return reviews
 
     def __isinstance_page(self):
