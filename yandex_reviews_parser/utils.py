@@ -70,7 +70,6 @@ class YandexParser:
 
             # Initialize the original Parser class
             parser = Parser(self.driver)
-            time.sleep(2 + random.random()) # Allow page to settle
 
             # Parse company info first to detect blocks
             company_info = parser.parse_company_info().get('company_info', {})
@@ -81,7 +80,12 @@ class YandexParser:
                 # Rotate and retry once
                 self.rotate_session()
                 self.driver.get(url)
-                time.sleep(3)
+
+                # Wait for critical element instead of fixed sleep
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "orgpage-header-view__header"))
+                )
+
                 parser = Parser(self.driver)
                 company_info = parser.parse_company_info().get('company_info', {})
 
