@@ -204,6 +204,7 @@ class Parser:
 
         # Ensure ALL reviews are expanded
         self.__ensure_all_reviews_expanded()
+        elements = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")
 
         # Now parse all reviews
         reviews = []
