@@ -69,14 +69,27 @@ class Parser:
             stars = 0
 
         try:
-            answer = elem.find_element(By.CLASS_NAME, "business-review-view__comment-expand")
-            if answer:
-                self.driver.execute_script("arguments[0].click()", answer)
-                answer = elem.find_element(By.CLASS_NAME, "business-review-comment-content__bubble").text
+            # Check if expand button exists
+            expand_button = elem.find_element(By.CLASS_NAME, "business-review-view__comment-expand")
+            if expand_button:
+                # Click using JavaScript to avoid direct interaction
+                self.driver.execute_script("arguments[0].click()", expand_button)
+                # Wait briefly for DOM update
+                time.sleep(0.3)
+                # Refind the answer bubble with stale-safe approach
+                try:
+                    answer = WebDriverWait(self.driver, 2).until(
+                        EC.presence_of_element_located(
+                            (By.CSS_SELECTOR, ".business-review-comment-content__bubble")
+                        )
+                    ).text
+                except (NoSuchElementException, TimeoutException):
+                    answer = None
             else:
                 answer = None
         except NoSuchElementException:
             answer = None
+
         item = Review(
             name=name,
             icon_href=icon_href,
