@@ -1,4 +1,5 @@
 import time
+import random
 from dataclasses import asdict
 
 from selenium.webdriver.common.by import By
