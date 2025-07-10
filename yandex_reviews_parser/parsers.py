@@ -143,46 +143,68 @@ class Parser:
         )
         return asdict(item)
 
+    def __get_review_by_position(self, position):
+        """Locate a review by its aria-posinset value"""
+        try:
+            return WebDriverWait(self.driver, 2).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, f".business-reviews-card-view__review[aria-posinset='{position}']")
+                )
+            )
+        except TimeoutException:
+            return None
+
     def __ensure_all_reviews_expanded(self):
-        """Ensure all reviews are expanded, handling those not in viewport"""
-        # Get all review elements
-        reviews = self.driver.find_elements(
+        """Ensure all reviews are expanded using stable position identifiers"""
+        # Get all review positions
+        position_elements = self.driver.find_elements(
             By.CSS_SELECTOR,
-            ".business-reviews-card-view__review"
+            ".business-reviews-card-view__review[aria-posinset]"
         )
+
+        if not position_elements:
+            return
+
+        # Extract positions
+        positions = [int(el.get_attribute("aria-posinset")) for el in position_elements]
+        total_reviews = max(positions) if positions else 0
 
         # Get viewport dimensions
         viewport_height = self.driver.execute_script("return window.innerHeight;")
 
-        for i, review in enumerate(reviews):
+        for pos in range(1, total_reviews + 1):
             try:
-                # Check if review needs expansion
+                # Get fresh reference using position
+                review = self.__get_review_by_position(pos)
+                if not review:
+                    continue
+
+                # Check if expansion is needed
                 try:
                     expand_btn = review.find_element(
                         By.CSS_SELECTOR,
                         ".business-review-view__expand"
                     )
                 except NoSuchElementException:
-                    # Already expanded or no expand button
-                    continue
+                    continue  # Already expanded
 
-                # Scroll review into view if needed
+                # Scroll to position if needed
                 review_y = review.location['y']
                 current_scroll = self.driver.execute_script("return window.pageYOffset;")
 
                 if not (current_scroll <= review_y < current_scroll + viewport_height):
-                    # Scroll to review with human-like behavior
+                    # Scroll to position with offset
                     scroll_target = max(0, review_y - viewport_height//3)
                     self.driver.execute_script(
                         f"window.scrollTo({{top: {scroll_target}, behavior: 'smooth'}});"
                     )
-                    time.sleep(random.uniform(0.1, 0.3))
+                    time.sleep(random.uniform(0.3, 0.6))
 
                 # Expand the review
                 self.driver.execute_script("arguments[0].click()", expand_btn)
 
                 # Random delay between actions
-                time.sleep(random.uniform(0.1, 0.2))
+                time.sleep(random.uniform(0.1, 0.3))
 
                 # Occasionally scroll randomly to mimic human
                 if random.random() > 0.8:  # 20% chance
@@ -190,9 +212,10 @@ class Parser:
                     self.driver.execute_script(
                         f"window.scrollBy(0, {random_scroll});"
                     )
-                    time.sleep(random.uniform(0.1, 0.3))
+                    time.sleep(random.uniform(0.2, 0.4))
 
             except Exception as e:
+                print(f"Error expanding review {pos}: {str(e)}")
                 continue
 
     def __get_data_reviews(self) -> list:
@@ -200,16 +223,23 @@ class Parser:
         elements = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")
         if len(elements) > 1:
             self.__scroll_to_bottom(elements[-1])
-            elements = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")
 
-        # Ensure ALL reviews are expanded
+        # Ensure ALL reviews are expanded using stable positions
         self.__ensure_all_reviews_expanded()
-        elements = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")
 
-        # Now parse all reviews
+        # Get fresh references for all reviews using positions
         reviews = []
-        for elem in elements:
-            reviews.append(self.__get_data_item(elem))
+        position_elements = self.driver.find_elements(
+            By.CSS_SELECTOR,
+            ".business-reviews-card-view__review[aria-posinset]"
+        )
+        positions = sorted([int(el.get_attribute("aria-posinset")) for el in position_elements])
+
+        for pos in positions:
+            review = self.__get_review_by_position(pos)
+            if review:
+                reviews.append(self.__get_data_item(review))
+
         return reviews
 
     def __isinstance_page(self):
